@@ -47,6 +47,7 @@ type info struct {
 	ExtraConfig     bool
 	Resources       bool
 	ToolsConfigInfo bool
+    CustomConfig    bool
 }
 
 func init() {
@@ -68,6 +69,7 @@ func (cmd *info) Register(ctx context.Context, f *flag.FlagSet) {
 	f.BoolVar(&cmd.ExtraConfig, "e", false, "Show ExtraConfig")
 	f.BoolVar(&cmd.Resources, "r", false, "Show resource summary")
 	f.BoolVar(&cmd.ToolsConfigInfo, "t", false, "Show ToolsConfigInfo")
+    f.BoolVar(&cmd.CustomConfig, "c", false, "Must be used with json, Show CustomConfig with Json")
 }
 
 func (cmd *info) Process(ctx context.Context) error {
@@ -108,6 +110,9 @@ func (cmd *info) Run(ctx context.Context, f *flag.FlagSet) error {
 
 	if cmd.OutputFlag.All() {
 		props = nil // Load everything
+        if cmd.CustomConfig {
+            props = []string{"summary","guest.ipAddress","config.extraConfig","datastore", "network"}
+        }
 	} else {
 		props = []string{"summary"} // Load summary
 		if cmd.General {
