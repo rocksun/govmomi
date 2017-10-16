@@ -147,19 +147,20 @@ func (vm *VirtualMachine) apply(spec *types.VirtualMachineConfigSpec) {
 		vm.Summary.Config.NumCpu = vm.Config.Hardware.NumCPU
 	}
 
-	// vm.Config.ExtraConfig = append(vm.Config.ExtraConfig, spec.ExtraConfig...)
     if len(spec.ExtraConfig) != 0 {
-		for i := 0; i < len(spec.ExtraConfig); i++ {
-			// json.NewEncoder(os.Stdout).Encode(spec.ExtraConfig)
+		for _, specExtra := range spec.ExtraConfig {
 			flag := 0
-			for j := 0; j < len(vm.Config.ExtraConfig); j++ {
-				if spec.ExtraConfig[i].GetOptionValue().Key == vm.Config.ExtraConfig[j].GetOptionValue().Key {
-					vm.Config.ExtraConfig[j].GetOptionValue().Value = spec.ExtraConfig[i].GetOptionValue().Value
+			for index, vmExtra := range vm.Config.ExtraConfig {
+				if specExtra.GetOptionValue().Key == vmExtra.GetOptionValue().Key {
+					vmExtra.GetOptionValue().Value = specExtra.GetOptionValue().Value
 					flag = 1
+				}
+				if vmExtra.GetOptionValue().Value == "" {
+					vm.Config.ExtraConfig = append(vm.Config.ExtraConfig[:index],vm.Config.ExtraConfig[index+1:]...)
 				}
 			}
 			if flag == 0 {
-				vm.Config.ExtraConfig = append(vm.Config.ExtraConfig, spec.ExtraConfig[i])
+				vm.Config.ExtraConfig = append(vm.Config.ExtraConfig, specExtra)
 			}
 		}
 	}
