@@ -23,6 +23,7 @@ import (
 	"os"
 	"strings"
 	"text/tabwriter"
+    "encoding/json"
 
 	"context"
 
@@ -48,6 +49,21 @@ type info struct {
 	Resources       bool
 	ToolsConfigInfo bool
     CustomConfig    bool
+}
+
+type VmResponse struct {
+    VirtualMachines []VmFormat
+}
+
+type Configtype struct {
+    ExtraConfig []map[string]interface{}
+}
+
+type VmFormat struct {
+    Config Configtype
+    Summary map[string]interface{}
+    Datastore []map[string]interface{}
+    Network []map[string]interface{}
 }
 
 func init() {
@@ -160,6 +176,16 @@ func (cmd *info) Run(ctx context.Context, f *flag.FlagSet) error {
 			return err
 		}
 	}
+
+    if cmd.CustomConfig {
+        var r VmResponse
+        var err error
+        output, _ := json.Marshal(res)
+        data := []byte(string(output))
+        json.Unmarshal(data, &r)
+        err = json.NewEncoder(os.Stdout).Encode(&r)
+        return err
+    }
 
 	return cmd.WriteResult(&res)
 }
