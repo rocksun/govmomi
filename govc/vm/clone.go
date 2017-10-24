@@ -20,11 +20,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 
 	"github.com/vmware/govmomi/govc/cli"
 	"github.com/vmware/govmomi/govc/flags"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/property"
+	"github.com/vmware/govmomi/view"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
@@ -431,5 +433,35 @@ func (cmd *clone) cloneVM(ctx context.Context) (*object.Task, error) {
 	}
 
 	// clone virtualmachine
-	return cmd.VirtualMachine.Clone(ctx, cmd.Folder, cmd.name, *cloneSpec)
+	task, err := cmd.VirtualMachine.Clone(ctx, cmd.Folder, cmd.name, *cloneSpec)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create view of VirtualMachine objects
+	m := view.NewManager(cmd.Client)
+
+	v, err := m.CreateContainerView(ctx, cmd.Client.ServiceContent.RootFolder, []string{"VirtualMachine"}, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer v.Destroy(ctx)
+
+	// Retrieve summary property for all machines
+	// Reference: http://pubs.vmware.com/vsphere-60/topic/com.vmware.wssdk.apiref.doc/vim.VirtualMachine.html
+	var vms []mo.VirtualMachine
+	err = v.Retrieve(ctx, []string{"VirtualMachine"}, []string{"summary"}, &vms)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Print new vm uuid
+	for _, vm := range vms {
+		if vm.Summary.Config.Name == cmd.name {
+			fmt.Printf("%v\n", vm.Summary.Config.Uuid)
+		}
+	}
+
+	return task, nil
 }
