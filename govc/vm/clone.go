@@ -30,6 +30,8 @@ import (
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
+
+	"reflect"
 )
 
 type clone struct {
@@ -50,6 +52,9 @@ type clone struct {
 	force         bool
 	template      bool
 	customization string
+	custip        string
+	custmask      string
+	custgw        string
 	waitForIP     bool
 	annotation    string
 	snapshot      string
@@ -103,6 +108,9 @@ func (cmd *clone) Register(ctx context.Context, f *flag.FlagSet) {
 	f.BoolVar(&cmd.force, "force", false, "Create VM if vmx already exists")
 	f.BoolVar(&cmd.template, "template", false, "Create a Template")
 	f.StringVar(&cmd.customization, "customization", "", "Customization Specification Name")
+	f.StringVar(&cmd.custip, "custip", "", "Customization IPAddress")
+	f.StringVar(&cmd.custgw, "custgw", "", "Customization Gateway")
+	f.StringVar(&cmd.custmask, "custmask", "", "Customization Netmask")
 	f.BoolVar(&cmd.waitForIP, "waitip", false, "Wait for VM to acquire IP address")
 	f.StringVar(&cmd.annotation, "annotation", "", "VM description")
 	f.StringVar(&cmd.snapshot, "snapshot", "", "Snapshot name to clone from")
@@ -430,6 +438,21 @@ func (cmd *clone) cloneVM(ctx context.Context) (*object.Task, error) {
 		customSpec := customSpecItem.Spec
 		// set the customization
 		cloneSpec.Customization = &customSpec
+
+		ipaddress := customSpec.NicSettingMap[0].Adapter.Ip
+
+		if len(cmd.custip) > 0 {
+			aa := reflect.ValueOf(ipaddress).Elem()
+			bb := aa.FieldByName("IpAddress")
+			bb.SetString(cmd.custip)
+		}
+
+		if len(cmd.custmask) > 0 {
+			customSpec.NicSettingMap[0].Adapter.SubnetMask = cmd.custmask
+		}
+		if len(cmd.custgw) > 0 {
+			customSpec.NicSettingMap[0].Adapter.Gateway[0] = cmd.custgw
+		}
 	}
 
 	// clone virtualmachine
