@@ -76,7 +76,8 @@ func (cmd *info) Run(ctx context.Context, f *flag.FlagSet) error {
 	var props []string
 
 	if cmd.OutputFlag.All() {
-		props = nil // Load everything
+		// props = nil // Load everything
+		props = []string{"config.network", "config.fileSystemVolume"}
 	} else {
 		props = []string{"summary"} // Load summary
 	}
